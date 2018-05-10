@@ -37,6 +37,7 @@
           <div class="progress-wrapper">
             <span class="time time-l">{{format(currentTime)}}</span>
             <div class="progress-bar-wrapper">
+              <progress-bar :precent="precent" v-on:precentChange="onProgressBarChange"></progress-bar>
             </div>
             <span class="time time-r">{{format(currentSong.duration)}}</span>
           </div>
@@ -83,6 +84,7 @@
 
 <script type="text/ecmascript-6">
 import animations from 'create-keyframe-animation'
+import progressBar from 'base/progress-bar/progress-bar'
 import {prefixStyle} from 'common/js/dom'
 import {mapGetters, mapMutations} from 'vuex'
 import {getSongvKey} from 'api/singer'
@@ -109,6 +111,9 @@ export default {
     },
     disableCls () {
       return this.songReady ? '' : 'disable'
+    },
+    precent () {
+      return this.currentTime / this.currentSong.duration
     },
     ...mapGetters([
       'fullScreen',
@@ -170,15 +175,16 @@ export default {
     format (intervel) {
       intervel = intervel | 0
       const minute = intervel / 60 | 0
-      const second = intervel % 60
+      const second = this._pad(intervel % 60)
       return `${minute}:${second}`
     },
-    _pad (num, n=2) {
+    _pad (num, n = 2) {
       let len = num.toString().length
       while (len < n) {
         num = '0' + num
         len++
       }
+      return num
     },
     back () {
       this.setFullScreen(false)
@@ -237,6 +243,12 @@ export default {
     togglePlay () {
       this.setPlayState(!this.playing)
     },
+    onProgressBarChange (precent) {
+      this.$refs.audio.currentTime = this.currentSong.duration * precent
+      if (!this.playing) {
+        this.togglePlay()
+      }
+    },
     ...mapMutations({
       setFullScreen: 'SET_FULL_SCREEN',
       setPlayState: 'SET_PLAYING_STATE',
@@ -251,6 +263,9 @@ export default {
       const audio = this.$refs.audio
       newPlaying ? audio.play() : audio.pause()
     }
+  },
+  components: {
+    progressBar
   }
 }
 </script>
