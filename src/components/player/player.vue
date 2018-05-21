@@ -42,8 +42,8 @@
             <span class="time time-r">{{format(currentSong.duration)}}</span>
           </div>
           <div class="operators">
-            <div class="icon i-left">
-              <i class="icon-sequence"></i>
+            <div class="icon i-left" @click="changeMode">
+              <i :class="iconMode"></i>
             </div>
             <div class="icon i-left" :class="disableCls">
               <i  class="icon-prev" @click="prev"></i>
@@ -71,7 +71,9 @@
           <p class="desc">{{currentSong.singer}}</p>
         </div>
         <div class="control">
-          <i :class="miniIcon"  @click.stop="togglePlay"></i>
+          <progress-circle :radius="32" :precent="precent">
+            <i :class="miniIcon" class="icon-mini" @click.stop="togglePlay"></i>
+          </progress-circle>
         </div>
         <div class="control">
           <i class="icon-playlist"></i>
@@ -85,10 +87,13 @@
 <script type="text/ecmascript-6">
 import animations from 'create-keyframe-animation'
 import progressBar from 'base/progress-bar/progress-bar'
+import progressCircle from 'base/progress-circle/progress-circle'
+import {playMode} from 'common/js/config'
 import {prefixStyle} from 'common/js/dom'
 import {mapGetters, mapMutations} from 'vuex'
 import {getSongvKey} from 'api/singer'
 import {ERR_OK} from 'api/config'
+import {shuffle} from 'common/js/utils'
 const transform = prefixStyle('transform')
 
 export default {
@@ -100,6 +105,9 @@ export default {
     }
   },
   computed: {
+    iconMode () {
+      return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
+    },
     playIcon () {
       return this.playing ? 'icon-pause' : 'icon-play'
     },
@@ -120,7 +128,9 @@ export default {
       'playList',
       'currentSong',
       'playing',
-      'currentIndex'
+      'currentIndex',
+      'mode',
+      'sequenceList'
     ])
   },
   methods: {
@@ -249,14 +259,40 @@ export default {
         this.togglePlay()
       }
     },
+    changeMode () {
+      let mode = (this.mode + 1) % 3
+      this.setPlayMode(mode)
+      let list = null
+      if (this.mode === 2) {
+        list = shuffle(this.sequenceList)
+        console.log(list)
+        this.resetCurrentIndex(list)
+      } else {
+        list = this.sequenceList
+        console.log(list)
+      }
+      this.setPlayList(list)
+    },
+    resetCurrentIndex (list) {
+      let index = list.findIndex((item) => {
+        return item.id === this.currentSong.id
+      })
+      this.setCurrentIndex(index)
+    },
     ...mapMutations({
       setFullScreen: 'SET_FULL_SCREEN',
       setPlayState: 'SET_PLAYING_STATE',
-      setCurrentIndex: 'SET_CURRENT_INDEX'
+      setCurrentIndex: 'SET_CURRENT_INDEX',
+      setPlayMode: 'SET_PLAY_MODE',
+      setPlayList: 'SET_PLAY_LIST'
     })
   },
   watch: {
-    currentSong () {
+    currentSong (newSong, oldSong) {
+      console.log(newSong + '----' + oldSong)
+      if (newSong.id === oldSong.id) {
+        return
+      }
       this._getSongvKey()
     },
     playing (newPlaying) {
@@ -265,7 +301,8 @@ export default {
     }
   },
   components: {
-    progressBar
+    progressBar,
+    progressCircle
   }
 }
 </script>
