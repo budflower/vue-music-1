@@ -80,7 +80,7 @@
         </div>
       </div>
     </transition>
-    <audio ref="audio"  v-show="musicUrl" @canplay="ready" @error="error" @timeupdate="updateTime"></audio>
+    <audio ref="audio"  v-show="musicUrl" @canplay="ready" @error="error" @timeupdate="updateTime" @ended="end"></audio>
   </div>
 </template>
 
@@ -144,6 +144,17 @@ export default {
           })
         }
       })
+    },
+    end () {
+      if (this.mode === playMode.loop) {
+        this.loop()
+      } else {
+        this.next()
+      }
+    },
+    loop () {
+      this.$refs.audio.currentTime = 0
+      this.$refs.audio.play()
     },
     next () {
       if (!this.songReady) {
@@ -263,14 +274,12 @@ export default {
       let mode = (this.mode + 1) % 3
       this.setPlayMode(mode)
       let list = null
-      if (this.mode === 2) {
+      if (mode === playMode.random) {
         list = shuffle(this.sequenceList)
-        console.log(list)
-        this.resetCurrentIndex(list)
       } else {
         list = this.sequenceList
-        console.log(list)
       }
+      this.resetCurrentIndex(list)
       this.setPlayList(list)
     },
     resetCurrentIndex (list) {
@@ -289,7 +298,7 @@ export default {
   },
   watch: {
     currentSong (newSong, oldSong) {
-      console.log(newSong + '----' + oldSong)
+      // console.log(newSong, oldSong)
       if (newSong.id === oldSong.id) {
         return
       }
